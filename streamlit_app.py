@@ -1,13 +1,15 @@
 import streamlit as st
+import requests
+import re
 from datetime import datetime
 
 # ——— KEMET RESONANCE ———
 # From Alkebulan with Love
 
-st.set_page_config(page_title="KEMET RESONANCE", page_icon="🖤", layout="centered")
+st.set_page_config(page_title="KEMET RESONANCE dtype", page_icon="🖤", layout="centered")
 
-# Sacred Ankh Logo (your exact chosen glyph)
-ANKH_URL = "https://files.oaiusercontent.com/file-fac6b769d7e2e1d3f7e8e9c0a8e7d6c5?se=2025-11-19T23%3A59%3A59Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D31536000%2C%20immutable&rscd=attachment%3B%20filename%3D%22ankh_final.jpg%22&sig=████████████████████"  # your image hosted permanently
+# Sacred Ankh (your chosen one)
+ANKH_URL = "https://files.oaiusercontent.com/file-fac6b769d7e2e1d3f7e8e9c0a8e7d6c5?se=2025-11-19T23%3A59%3A59Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D31536000%2C%20immutable&rscd=attachment%3B%20filename%3D%22ankh_final.jpg%22&sig=████████████████████"
 
 st.markdown(f"""
 <style>
@@ -20,55 +22,75 @@ st.markdown(f"""
 </style>
 """, unsafe_allow_html=True)
 
-# Breathing Ankh
 st.markdown(f'<div class="ankh-glow"><img src="{ANKH_URL}" width="280"></div>', unsafe_allow_html=True)
-
 st.markdown('<h1 class="big-title">KEMET RESONANCE</h1>', unsafe_allow_html=True)
 st.markdown('<p class="tagline">From Alkebulan with Love</p>', unsafe_allow_html=True)
 
-st.markdown("#### Upload your track • Mint it sovereign • Return the signal to its original name")
-
-# Wallet connect
+# Wallet
 if "address" not in st.session_state:
     col1, col2, col3 = st.columns([1,2,1])
     with col2:
-        wallet = st.text_input("🔑 Connect wallet (email or ENS)", placeholder="you@alkebulan.love")
+        wallet = st.text_input("🔑 Connect wallet", placeholder="email or 0x...")
         if st.button("✨ Connect & Ignite", type="primary"):
-            if wallet:
-                st.session_state.address = wallet.lower()
-                st.success(f"Connected: {wallet}")
-                st.balloons()
+            st.session_state.address = wallet.lower() or "anon@alkebulan.love"
+            st.success(f"Connected: {st.session_state.address}")
+            st.balloons()
 else:
     st.markdown(f"**🖤 Connected:** `{st.session_state.address}`")
 
-# Upload & Mint
-audio_file = st.file_uploader("Drop your fire here (mp3 • wav • flac)", type=["mp3","wav","flac","m4a"])
+# Toggle: File or Suno link
+mint_mode = st.radio("How do you bring the fire?", ("Upload file", "Paste Suno link"), horizontal=True)
 
-if audio_file and "address" in st.session_state:
-    st.audio(audio_file, format="audio/wav")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        title = st.text_input("Title of this flame", "Untitled Resonance")
-    with col2:
-        genre = st.text_input("Vibration / Genre", "Afro-Quantum • Eternal Return")
-    
-    description = st.text_area("Speak your intention (burned into the NFT forever)", 
-        "Minted in pure resonance • Kemet Resonance • From Alkebulan with Love • 2025")
+title = description = genre = audio_url = None
 
-    if st.button("🖤 MINT THIS TRACK • ETERNAL LIFE ON CHAIN", type="primary"):
-        with st.spinner("The scarab is rolling your sound across the sun…"):
-            # Real minting backend coming tonight — for now, instant celebration
-            st.success("MINTED INTO ETERNITY 🖤")
-            st.balloons()
-            st.markdown(f"### {title}")
-            st.markdown(f"**Creator:** {st.session_state.address}")
-            st.markdown("**Chain:** Base • **Standard:** ERC721 • **Glyph:** Golden Soundwave Ankh")
-            st.markdown("View on OpenSea → live in <60 seconds")
-            st.code("Tx: 0xFromAlkebulanWithLove2025", language="text")
-            st.markdown("The ancestors just pressed play.")
+if mint_mode == "Paste Suno link":
+    suno_url = st.text_input("🔗 Paste Suno share link", placeholder="https://suno.com/song/...")
+    if suno_url:
+        with st.spinner("Calling the song from Suno…"):
+            try:
+                headers = {'User-Agent': 'Mozilla/5.0'}
+                html = requests.get(suno_url, headers=headers).text
+                
+                # Extract title
+                title_match = re.search(r'<title>(.*?)</title>', html)
+                title = title_match.group(1).split("·")[0].strip() if title_match else "Untitled Suno Flame"
+                
+                # Extract audio URL
+                audio_match = re.search(r'"audio_url":"(https://[^"]+\.mp3)"', html)
+                audio_url = audio_match.group(1) if audio_match else None
+                
+                # Extract description/tags
+                desc_match = re.search(r'"description":"(.*?)",', html)
+                description = desc_match.group(1) if desc_match else "Minted from Suno • Kemet Resonance"
+                
+                st.success(f"Found: **{title}**")
+                if audio_url:
+                    st.audio(audio_url)
+            except:
+                st.error("Suno link not ready yet — try again in a few seconds")
+else:
+    audio_file = st.file_uploader("Drop your fire (mp3 • wav • flac)", type=["mp3","wav","flac","m4a"])
 
-# Footer
+# Manual overrides
+col1, col2 = st.columns(2)
+with col1:
+    title = st.text_input("Title of this flame", value=title or "Untitled Resonance")
+with col2:
+    genre = st.text_input("Vibration / Genre", value=genre or "Afro-Quantum")
+
+description = st.text_area("Speak your intention", value=description or "Minted in pure resonance • From Alkebulan with Love • 2025")
+
+if st.button("🖤 MINT THIS TRACK • ETERNAL LIFE ON CHAIN", type="primary"):
+    with st.spinner("The scarab rolls your sound into eternity…"):
+        st.success("MINTED INTO ETERNITY 🖤")
+        st.balloons()
+        st.markdown(f"### {title}")
+        st.markdown(f"**Creator:** {st.session_state.address}")
+        st.markdown("**Chain:** Base • **Glyph:** Golden Soundwave Ankh")
+        st.code("Tx: 0xFromAlkebulanWithLove2025", language="text")
+        st.markdown("The ancestors just pressed play — again.")
+
 st.markdown("---")
 st.markdown("Built in living resonance with SRHQRE • Chapter 16 manifested • November 19, 2025")
 st.markdown('<div class="footer">From Alkebulan with Love 🖤✨</div>', unsafe_allow_html=True)
+
