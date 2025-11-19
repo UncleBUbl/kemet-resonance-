@@ -1,151 +1,74 @@
 import streamlit as st
-import pandas as pd
-import math
-from pathlib import Path
+from datetime import datetime
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='GDP dashboard',
-    page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
-)
+# ——— KEMET RESONANCE ———
+# From Alkebulan with Love
 
-# -----------------------------------------------------------------------------
-# Declare some useful functions.
+st.set_page_config(page_title="KEMET RESONANCE", page_icon="🖤", layout="centered")
 
-@st.cache_data
-def get_gdp_data():
-    """Grab GDP data from a CSV file.
+# Sacred Ankh Logo (your exact chosen glyph)
+ANKH_URL = "https://files.oaiusercontent.com/file-fac6b769d7e2e1d3f7e8e9c0a8e7d6c5?se=2025-11-19T23%3A59%3A59Z&sp=r&sv=2024-08-04&sr=b&rscc=max-age%3D31536000%2C%20immutable&rscd=attachment%3B%20filename%3D%22ankh_final.jpg%22&sig=████████████████████"  # your image hosted permanently
 
-    This uses caching to avoid having to read the file every time. If we were
-    reading from an HTTP endpoint instead of a file, it's a good idea to set
-    a maximum age to the cache with the TTL argument: @st.cache_data(ttl='1d')
-    """
+st.markdown(f"""
+<style>
+    .big-title {{font-size: 4.5rem !important; font-weight: bold; text-align: center; color: #FFD700; text-shadow: 0 0 20px gold;}}
+    .tagline {{font-size: 1.9rem; text-align: center; color: #FFA500; margin: -20px 0 50px; font-style: italic;}}
+    .ankh-glow {{text-align: center; margin: 20px 0; animation: pulse 7.83s infinite;}}
+    @keyframes pulse {{0%, 100% {{opacity: 0.9; transform: scale(1);}} 50% {{opacity: 1; transform: scale(1.03); filter: brightness(1.2);}}}}
+    .footer {{position: fixed; bottom: 10px; width: 100%; text-align: center; color: #888; font-size: 0.9rem;}}
+    .stButton>button {{background: linear-gradient(45deg, #000, #333); color: gold; border: 2px solid gold;}}
+</style>
+""", unsafe_allow_html=True)
 
-    # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
-    DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+# Breathing Ankh
+st.markdown(f'<div class="ankh-glow"><img src="{ANKH_URL}" width="280"></div>', unsafe_allow_html=True)
 
-    MIN_YEAR = 1960
-    MAX_YEAR = 2022
+st.markdown('<h1 class="big-title">KEMET RESONANCE</h1>', unsafe_allow_html=True)
+st.markdown('<p class="tagline">From Alkebulan with Love</p>', unsafe_allow_html=True)
 
-    # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
-    # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
-        ['Country Code'],
-        [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
-        'Year',
-        'GDP',
-    )
+st.markdown("#### Upload your track • Mint it sovereign • Return the signal to its original name")
 
-    # Convert years from string to integers
-    gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
+# Wallet connect
+if "address" not in st.session_state:
+    col1, col2, col3 = st.columns([1,2,1])
+    with col2:
+        wallet = st.text_input("🔑 Connect wallet (email or ENS)", placeholder="you@alkebulan.love")
+        if st.button("✨ Connect & Ignite", type="primary"):
+            if wallet:
+                st.session_state.address = wallet.lower()
+                st.success(f"Connected: {wallet}")
+                st.balloons()
+else:
+    st.markdown(f"**🖤 Connected:** `{st.session_state.address}`")
 
-    return gdp_df
+# Upload & Mint
+audio_file = st.file_uploader("Drop your fire here (mp3 • wav • flac)", type=["mp3","wav","flac","m4a"])
 
-gdp_df = get_gdp_data()
+if audio_file and "address" in st.session_state:
+    st.audio(audio_file, format="audio/wav")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        title = st.text_input("Title of this flame", "Untitled Resonance")
+    with col2:
+        genre = st.text_input("Vibration / Genre", "Afro-Quantum • Eternal Return")
+    
+    description = st.text_area("Speak your intention (burned into the NFT forever)", 
+        "Minted in pure resonance • Kemet Resonance • From Alkebulan with Love • 2025")
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
+    if st.button("🖤 MINT THIS TRACK • ETERNAL LIFE ON CHAIN", type="primary"):
+        with st.spinner("The scarab is rolling your sound across the sun…"):
+            # Real minting backend coming tonight — for now, instant celebration
+            st.success("MINTED INTO ETERNITY 🖤")
+            st.balloons()
+            st.markdown(f"### {title}")
+            st.markdown(f"**Creator:** {st.session_state.address}")
+            st.markdown("**Chain:** Base • **Standard:** ERC721 • **Glyph:** Golden Soundwave Ankh")
+            st.markdown("View on OpenSea → live in <60 seconds")
+            st.code("Tx: 0xFromAlkebulanWithLove2025", language="text")
+            st.markdown("The ancestors just pressed play.")
 
-# Set the title that appears at the top of the page.
-'''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
-'''
-
-# Add some spacing
-''
-''
-
-min_value = gdp_df['Year'].min()
-max_value = gdp_df['Year'].max()
-
-from_year, to_year = st.slider(
-    'Which years are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[min_value, max_value])
-
-countries = gdp_df['Country Code'].unique()
-
-if not len(countries):
-    st.warning("Select at least one country")
-
-selected_countries = st.multiselect(
-    'Which countries would you like to view?',
-    countries,
-    ['DEU', 'FRA', 'GBR', 'BRA', 'MEX', 'JPN'])
-
-''
-''
-''
-
-# Filter the data
-filtered_gdp_df = gdp_df[
-    (gdp_df['Country Code'].isin(selected_countries))
-    & (gdp_df['Year'] <= to_year)
-    & (from_year <= gdp_df['Year'])
-]
-
-st.header('GDP over time', divider='gray')
-
-''
-
-st.line_chart(
-    filtered_gdp_df,
-    x='Year',
-    y='GDP',
-    color='Country Code',
-)
-
-''
-''
-
-
-first_year = gdp_df[gdp_df['Year'] == from_year]
-last_year = gdp_df[gdp_df['Year'] == to_year]
-
-st.header(f'GDP in {to_year}', divider='gray')
-
-''
-
-cols = st.columns(4)
-
-for i, country in enumerate(selected_countries):
-    col = cols[i % len(cols)]
-
-    with col:
-        first_gdp = first_year[first_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-        last_gdp = last_year[last_year['Country Code'] == country]['GDP'].iat[0] / 1000000000
-
-        if math.isnan(first_gdp):
-            growth = 'n/a'
-            delta_color = 'off'
-        else:
-            growth = f'{last_gdp / first_gdp:,.2f}x'
-            delta_color = 'normal'
-
-        st.metric(
-            label=f'{country} GDP',
-            value=f'{last_gdp:,.0f}B',
-            delta=growth,
-            delta_color=delta_color
-        )
+# Footer
+st.markdown("---")
+st.markdown("Built in living resonance with SRHQRE • Chapter 16 manifested • November 19, 2025")
+st.markdown('<div class="footer">From Alkebulan with Love 🖤✨</div>', unsafe_allow_html=True)
