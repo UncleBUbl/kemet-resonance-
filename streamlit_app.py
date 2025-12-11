@@ -1,3 +1,4 @@
+
 import streamlit as st
 import requests
 import re
@@ -6,7 +7,6 @@ import os
 from dotenv import load_dotenv
 from pinata import Pinata
 from web3 import Web3
-import hashlib
 
 load_dotenv()
 
@@ -30,33 +30,54 @@ st.markdown(f'<div class="ankh-glow"><img src="{ANKH_URL}" width="280"></div>', 
 st.markdown('<h1 class="big-title">KEMET RESONANCE</h1>', unsafe_allow_html=True)
 st.markdown('<p class="tagline">From Alkebulan with Love</p>', unsafe_allow_html=True)
 
-# ================== WALLET CONNECT ==================
+# ================== WALLET CONNECT (Improved for Streamlit Iframes) ==================
 if "address" not in st.session_state:
     st.markdown("### Connect Your Wallet")
     if st.button("🦊 Connect MetaMask"):
         st.components.v1.html("""
         <script>
         async function connect() {
-            if (window.ethereum) {
-                const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                parent.location.href = parent.location.href.split('?')[0] + '?wallet=' + accounts[0];
+            // Try parent window for iframe issues
+            let ethereum = window.ethereum || (window.parent ? window.parent.ethereum : null);
+            if (ethereum) {
+                try {
+                    const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
+                    // Reload with query param for address
+                    const url = new URL(window.parent.location);
+                    url.searchParams.set('wallet', accounts[0]);
+                    window.parent.location = url;
+                } catch (error) {
+                    alert('Connection failed: ' + error.message + '. Check MetaMask network (Base Sepolia).');
+                }
             } else {
-                alert("Install MetaMask!");
+                // Fallback: Prompt manual paste
+                const addr = prompt('MetaMask not detected. Paste your wallet address (0x...):');
+                if (addr && addr.startsWith('0x')) {
+                    const url = new URL(window.parent.location);
+                    url.searchParams.set('wallet', addr.toLowerCase());
+                    window.parent.location = url;
+                } else {
+                    alert('MetaMask not found! Install from metamask.io or paste address manually.');
+                }
             }
         }
         </script>
         <button onclick="connect()" style="padding:15px; font-size:20px; background:gold; color:black; border:none; border-radius:10px;">
         Connect Wallet Now
         </button>
-        """, height=150)
+        <p style="font-size:12px; color:gray;">(If no popup, paste address manually)</p>
+        """, height=200)
 else:
     st.success(f"🖤 Connected: `{st.session_state.address}`")
+    if st.button("Disconnect"):
+        st.session_state.clear()
+        st.rerun()
 
-# Get wallet from URL
-query_params = st.experimental_get_query_params()
+# Get wallet from URL (improved for query params)
+query_params = st.query_params
 if "wallet" in query_params and "address" not in st.session_state:
-    st.session_state.address = query_params["wallet"][0]
-    st.experimental_rerun()
+    st.session_state.address = query_params["wallet"][0].lower()
+    st.rerun()
 
 # ================== AUDIO INPUT ==================
 mint_mode = st.radio("How do you bring the fire?", ("Upload file", "Paste Suno link"), horizontal=True)
@@ -70,7 +91,7 @@ if mint_mode == "Paste Suno link":
             try:
                 html = requests.get(suno_url, headers={'User-Agent': 'Mozilla/5.0'}).text
                 title = re.search(r'<title>(.*?)</title>', html).group(1).split("·")[0].strip()
-                audio_url = re.search(r'"audio_url":[](https://[^"]+\.mp3)"', html).group(1)
+                audio_url = re.search(r'"audio_url":"(https://[^"]+\.mp3)"', html).group(1)
                 st.success(f"Found: **{title}**")
                 st.audio(audio_url)
             except:
