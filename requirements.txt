@@ -1,6 +1,6 @@
-streamlit>=1.32
+streamlit
 requests
 python-dotenv
-pinata-py
+pinata
 web3
 eth-account
