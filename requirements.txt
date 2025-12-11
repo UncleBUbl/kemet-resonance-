@@ -1,7 +1,6 @@
-streamlit==1.32.0
-streamlit-wallet-connect==0.1.0  # For MetaMask integration
-thirdweb-sdk==0.11.0  # For Base NFT contract
-pinata-sdk==1.0.0  # For IPFS pinning
-requests==2.31.0
-python-dotenv==1.0.0
-web3==6.11.2  # Fallback for raw tx if needed
+streamlit>=1.32
+requests
+python-dotenv
+pinata-py
+web3
+eth-account
