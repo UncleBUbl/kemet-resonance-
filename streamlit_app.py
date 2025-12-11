@@ -1,4 +1,3 @@
-
 import streamlit as st
 import requests
 import re
@@ -30,22 +29,20 @@ st.markdown(f'<div class="ankh-glow"><img src="{ANKH_URL}" width="280"></div>', 
 st.markdown('<h1 class="big-title">KEMET RESONANCE</h1>', unsafe_allow_html=True)
 st.markdown('<p class="tagline">From Alkebulan with Love</p>', unsafe_allow_html=True)
 
-# ================== WALLET CONNECT (Improved for Streamlit Iframes) ==================
+# ================== WALLET CONNECT (Fixed for Iframe Navigation Errors) ==================
 if "address" not in st.session_state:
     st.markdown("### Connect Your Wallet")
     if st.button("🦊 Connect MetaMask"):
         st.components.v1.html("""
         <script>
         async function connect() {
-            // Try parent window for iframe issues
             let ethereum = window.ethereum || (window.parent ? window.parent.ethereum : null);
             if (ethereum) {
                 try {
                     const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                    // Reload with query param for address
-                    const url = new URL(window.parent.location);
-                    url.searchParams.set('wallet', accounts[0]);
-                    window.parent.location = url;
+                    alert('Connected! Address: ' + accounts[0] + '\\n\\nRefresh the page and paste this address manually in the input below if needed.');
+                    // Avoid navigation - let user refresh manually
+                    console.log('Wallet connected: ' + accounts[0]);
                 } catch (error) {
                     alert('Connection failed: ' + error.message + '. Check MetaMask network (Base Sepolia).');
                 }
@@ -53,11 +50,10 @@ if "address" not in st.session_state:
                 // Fallback: Prompt manual paste
                 const addr = prompt('MetaMask not detected. Paste your wallet address (0x...):');
                 if (addr && addr.startsWith('0x')) {
-                    const url = new URL(window.parent.location);
-                    url.searchParams.set('wallet', addr.toLowerCase());
-                    window.parent.location = url;
+                    alert('Address saved: ' + addr.toLowerCase() + '\\n\\nRefresh the page and use the manual input below.');
+                    console.log('Manual address: ' + addr.toLowerCase());
                 } else {
-                    alert('MetaMask not found! Install from metamask.io or paste address manually.');
+                    alert('MetaMask not found! Install from metamask.io.');
                 }
             }
         }
@@ -65,19 +61,20 @@ if "address" not in st.session_state:
         <button onclick="connect()" style="padding:15px; font-size:20px; background:gold; color:black; border:none; border-radius:10px;">
         Connect Wallet Now
         </button>
-        <p style="font-size:12px; color:gray;">(If no popup, paste address manually)</p>
+        <p style="font-size:12px; color:gray;">(Refresh page after connect if needed. Manual paste fallback below.)</p>
         """, height=200)
+        
+        # Manual fallback input
+        manual_addr = st.text_input("Or paste wallet address manually:", placeholder="0x...")
+        if manual_addr and manual_addr.startswith("0x"):
+            st.session_state.address = manual_addr.lower()
+            st.success(f"🖤 Manual Connected: `{st.session_state.address}`")
+            st.rerun()
 else:
     st.success(f"🖤 Connected: `{st.session_state.address}`")
     if st.button("Disconnect"):
         st.session_state.clear()
         st.rerun()
-
-# Get wallet from URL (improved for query params)
-query_params = st.query_params
-if "wallet" in query_params and "address" not in st.session_state:
-    st.session_state.address = query_params["wallet"][0].lower()
-    st.rerun()
 
 # ================== AUDIO INPUT ==================
 mint_mode = st.radio("How do you bring the fire?", ("Upload file", "Paste Suno link"), horizontal=True)
