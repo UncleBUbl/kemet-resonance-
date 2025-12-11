@@ -29,7 +29,7 @@ st.markdown(f'<div class="ankh-glow"><img src="{ANKH_URL}" width="280"></div>', 
 st.markdown('<h1 class="big-title">KEMET RESONANCE</h1>', unsafe_allow_html=True)
 st.markdown('<p class="tagline">From Alkebulan with Love</p>', unsafe_allow_html=True)
 
-# ================== WALLET CONNECT (Fixed for Iframe Navigation Errors) ==================
+# ================== WALLET CONNECT (Enhanced with Persistent Manual Input) ==================
 if "address" not in st.session_state:
     st.markdown("### Connect Your Wallet")
     if st.button("🦊 Connect MetaMask"):
@@ -40,41 +40,35 @@ if "address" not in st.session_state:
             if (ethereum) {
                 try {
                     const accounts = await ethereum.request({ method: 'eth_requestAccounts' });
-                    alert('Connected! Address: ' + accounts[0] + '\\n\\nRefresh the page and paste this address manually in the input below if needed.');
-                    // Avoid navigation - let user refresh manually
+                    alert('Connected! Address: ' + accounts[0] + '\\n\\nCopy this and paste it into the manual input below. Then refresh if needed.');
                     console.log('Wallet connected: ' + accounts[0]);
                 } catch (error) {
                     alert('Connection failed: ' + error.message + '. Check MetaMask network (Base Sepolia).');
                 }
             } else {
-                // Fallback: Prompt manual paste
-                const addr = prompt('MetaMask not detected. Paste your wallet address (0x...):');
-                if (addr && addr.startsWith('0x')) {
-                    alert('Address saved: ' + addr.toLowerCase() + '\\n\\nRefresh the page and use the manual input below.');
-                    console.log('Manual address: ' + addr.toLowerCase());
-                } else {
-                    alert('MetaMask not found! Install from metamask.io.');
-                }
+                alert('MetaMask not detected! Install from metamask.io.');
             }
         }
         </script>
         <button onclick="connect()" style="padding:15px; font-size:20px; background:gold; color:black; border:none; border-radius:10px;">
         Connect Wallet Now
         </button>
-        <p style="font-size:12px; color:gray;">(Refresh page after connect if needed. Manual paste fallback below.)</p>
-        """, height=200)
-        
-        # Manual fallback input
-        manual_addr = st.text_input("Or paste wallet address manually:", placeholder="0x...")
-        if manual_addr and manual_addr.startswith("0x"):
-            st.session_state.address = manual_addr.lower()
-            st.success(f"🖤 Manual Connected: `{st.session_state.address}`")
-            st.rerun()
+        """, height=150)
+    
+    # Always-visible manual input for persistence
+    st.markdown("**Or paste wallet address manually:**")
+    manual_addr = st.text_input("0x...", placeholder="Enter your address (0x...)", key="manual_wallet")
+    if manual_addr and manual_addr.startswith("0x"):
+        st.session_state.address = manual_addr.lower()
+        st.success(f"🖤 Connected: `{st.session_state.address}`")
+        st.rerun()
 else:
     st.success(f"🖤 Connected: `{st.session_state.address}`")
-    if st.button("Disconnect"):
-        st.session_state.clear()
-        st.rerun()
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Disconnect"):
+            st.session_state.clear()
+            st.rerun()
 
 # ================== AUDIO INPUT ==================
 mint_mode = st.radio("How do you bring the fire?", ("Upload file", "Paste Suno link"), horizontal=True)
@@ -82,34 +76,42 @@ mint_mode = st.radio("How do you bring the fire?", ("Upload file", "Paste Suno l
 title = description = genre = audio_url = None
 
 if mint_mode == "Paste Suno link":
-    suno_url = st.text_input("Paste Suno share link", placeholder="https://suno.com/song/...")
+    suno_url = st.text_input("🔗 Paste Suno share link", placeholder="https://suno.com/song/...")
     if suno_url:
         with st.spinner("Calling the ancestors…"):
             try:
                 html = requests.get(suno_url, headers={'User-Agent': 'Mozilla/5.0'}).text
-                title = re.search(r'<title>(.*?)</title>', html).group(1).split("·")[0].strip()
-                audio_url = re.search(r'"audio_url":"(https://[^"]+\.mp3)"', html).group(1)
+                title_match = re.search(r'<title>(.*?)</title>', html)
+                title = title_match.group(1).split("·")[0].strip() if title_match else "Untitled Suno Flame"
+                audio_match = re.search(r'"audio_url":"(https://[^"]+\.mp3)"', html)
+                audio_url = audio_match.group(1) if audio_match else None
+                desc_match = re.search(r'"description":"(.*?)",', html)
+                description = desc_match.group(1) if desc_match else "Minted from Suno • Kemet Resonance"
                 st.success(f"Found: **{title}**")
-                st.audio(audio_url)
-            except:
-                st.error("Link not ready — wait a few seconds and refresh")
+                if audio_url:
+                    st.audio(audio_url)
+            except Exception as e:
+                st.error(f"Suno link issue: {str(e)}")
 else:
     audio_file = st.file_uploader("Drop your fire (mp3 • wav • flac)", type=["mp3","wav","flac","m4a"])
 
 col1, col2 = st.columns(2)
 with col1:
-    title = st.text_input("Title", value=title or "Untitled Resonance")
+    title = st.text_input("Title of this flame", value=title or "Untitled Resonance")
 with col2:
-    genre = st.text_input("Genre", value=genre or "Afro-Quantum")
-description = st.text_area("Intention", value=description or "Minted in pure resonance • From Alkebulan with Love • 2025")
+    genre = st.text_input("Vibration / Genre", value=genre or "Afro-Quantum")
+description = st.text_area("Speak your intention", value=description or "Minted in pure resonance • From Alkebulan with Love • 2025")
 
 # ================== MINT BUTTON ==================
-if st.button("MINT THIS TRACK • ETERNAL LIFE ON CHAIN", type="primary"):
+if st.button("🖤 MINT THIS TRACK • ETERNAL LIFE ON CHAIN", type="primary"):
     if "address" not in st.session_state:
         st.error("Connect wallet first!")
         st.stop()
+    if not (audio_file or audio_url):
+        st.error("Upload or paste a track!")
+        st.stop()
 
-    with st.spinner("The scarab is rolling your sound into eternity…"):
+    with st.spinner("The scarab rolls your sound into eternity…"):
         try:
             # Pinata IPFS Upload
             pinata = Pinata(os.getenv("PINATA_API_KEY"), os.getenv("PINATA_SECRET_API_KEY"))
@@ -118,7 +120,8 @@ if st.button("MINT THIS TRACK • ETERNAL LIFE ON CHAIN", type="primary"):
                 audio_bytes = audio_file.read()
                 audio_name = audio_file.name
             else:
-                audio_bytes = requests.get(audio_url).content
+                audio_response = requests.get(audio_url)
+                audio_bytes = audio_response.content
                 audio_name = f"{title}.mp3"
 
             audio_result = pinata.pin_file_to_ipfs(audio_bytes, audio_name)
@@ -152,6 +155,7 @@ if st.button("MINT THIS TRACK • ETERNAL LIFE ON CHAIN", type="primary"):
                 'nonce': w3.eth.get_transaction_count(st.session_state.address),
             })
 
+            st.success("MINT PREPARED 🖤")
             st.code(f"Copy this TX JSON and import into MetaMask:\n{json.dumps(tx, default=str)}", language="json")
             st.markdown("**In MetaMask: Activity > Import Transaction > Paste JSON > Sign.** (Use test ETH)")
             tx_hash = st.text_input("Paste signed TX hash here to verify")
@@ -160,6 +164,8 @@ if st.button("MINT THIS TRACK • ETERNAL LIFE ON CHAIN", type="primary"):
                 st.success(f"MINT CONFIRMED 🖤 [View on Basescan](https://sepolia.basescan.org/tx/{tx_hash})")
                 st.balloons()
 
+            st.markdown(f"### {title}")
+            st.markdown(f"**Creator:** {st.session_state.address}")
             st.markdown(f"**Token URI:** {token_uri}")
             st.audio(audio_ipfs)
             st.markdown("The ancestors just pressed play — forever.")
